@@ -9,8 +9,7 @@ struct taskControlBlock
 };
 
 int32_t RTOS_HEAP[HEAP_SIZE];
-
-uint32_t CURRENT_HEAP_END = (uint32_t)RTOS_HEAP;
+int32_t HEAP_INDEX = 0;
 
 typedef struct taskControlBlock tcb_t;
 
@@ -20,46 +19,30 @@ tcb_t *pointerLastTaskControlBlock = nullptr;
 
 void CreateTask(volatile void (*task)(), uint32_t stackSize)
 {
-    // 1. Calculate the base address for the stack
-    volatile int32_t stackBase = CURRENT_HEAP_END + stackSize;
+    HEAP_INDEX += stackSize;
 
-    // 2. Update the current SRAM end address
-    CURRENT_HEAP_END = stackBase;
-
-    // 3. Create a TCB for the task
     tcb_t tcb;
-    tcb.stackPointer = (int32_t *)(stackBase - 16); // 16 registers to be saved on stack
+    tcb.stackPointer = &RTOS_HEAP[HEAP_INDEX - 16];
 
-    // 4. Set the 'T' bit in stacked xPSR to '1' to notify processor
-    // on exception return about the thumb state. V6-m and V7-m cores
-    // can only support thumb state hence this should be always set
-    // to '1'.
+    RTOS_HEAP[HEAP_INDEX - 1] = 0x01000000;
+    RTOS_HEAP[HEAP_INDEX - 2] = (int32_t)task;
 
-    volatile int32_t *stackPointerxPSR = (int32_t *)stackBase - 1;
-    *stackPointerxPSR = 0x01000000;
+    pointerFirstTaskControlBlock = &tcb;
+    pointerFirstTaskControlBlock->nextStackPointer = &tcb;
 
-    volatile int32_t *stackPointerTask = (int32_t *)stackBase - 2;
-    *stackPointerTask = (int32_t)task;
-
-    // tcb->stackPointer[stackSize - 1] = 0x01000000;
-
-    // // 5. Set the stacked PC to point to the task
-    // tcb->stackPointer[stackSize - 2] = task;
-
-    // 6. Set the stacked LR to point to the launch scheduler routine (round robin)
-
-    if (pointerFirstTaskControlBlock == nullptr) // first task created
-    {
-        pointerLastTaskControlBlock = &tcb;
-        pointerFirstTaskControlBlock = &tcb;
-        pointerFirstTaskControlBlock->nextStackPointer = &tcb;
-    }
-    else // not the first task created
-    {
-        pointerLastTaskControlBlock->nextStackPointer = &tcb;
-        tcb.nextStackPointer = pointerFirstTaskControlBlock;
-        pointerLastTaskControlBlock = &tcb;
-    }
+    // // 6. Set the stacked LR to point to the launch scheduler routine (round robin)
+    // if (pointerFirstTaskControlBlock == nullptr) // first task created
+    // {
+    //     pointerLastTaskControlBlock = &tcb;
+    //     pointerFirstTaskControlBlock = &tcb;
+    //     pointerFirstTaskControlBlock->nextStackPointer = &tcb;
+    // }
+    // else // not the first task created
+    // {
+    //     pointerLastTaskControlBlock->nextStackPointer = &tcb;
+    //     tcb.nextStackPointer = pointerFirstTaskControlBlock;
+    //     pointerLastTaskControlBlock = &tcb;
+    // }
 }
 
 void OsInitThreadStack()
