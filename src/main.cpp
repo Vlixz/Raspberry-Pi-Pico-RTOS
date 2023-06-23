@@ -61,6 +61,23 @@ volatile void Task1()
   }
 }
 
+volatile void Task2()
+{
+  int count = 0;
+
+  while (1)
+  {
+    sleep_ms(4000);
+
+    count++;
+
+    char str[10];
+    sprintf(str, "Task 2: %d\n", count);
+
+    uart_puts(UART_ID, str);
+  }
+}
+
 void enable_uart()
 {
   // Set up our UART with the required speed.
@@ -88,7 +105,11 @@ int main()
 {
   enable_uart();
 
-  OsInitThreadStack(Task0, Task1);
+  CreateTask(Task0, STACKSIZE);
+  CreateTask(Task1, STACKSIZE);
+  CreateTask(Task2, STACKSIZE);
+
+  OsInitThreadStack();
   LaunchScheduler();
 
   while (1)
