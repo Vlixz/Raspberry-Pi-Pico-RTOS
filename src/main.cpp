@@ -88,7 +88,10 @@ int main()
 {
   enable_uart();
 
-  OsInitThreadStack(Task0, Task1);
+  CreateTask(Task0, STACKSIZE);
+  // CreateTask((uint32_t)Task1, STACKSIZE);
+
+  OsInitThreadStack();
   LaunchScheduler();
 
   while (1)

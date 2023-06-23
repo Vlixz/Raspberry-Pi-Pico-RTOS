@@ -1,23 +1,71 @@
 #include "schedular.h"
 
+#define HEAP_SIZE 1024
+
 struct taskControlBlock
 {
     int32_t *stackPointer;
     struct taskControlBlock *nextStackPointer;
 };
 
+int32_t RTOS_HEAP[HEAP_SIZE];
+
+uint32_t CURRENT_HEAP_END = (uint32_t)RTOS_HEAP;
+
 typedef struct taskControlBlock tcb_t;
 
-tcb_t taskControlBlocks[NUM_OF_THREADS];
+tcb_t *pointerCurrentTaskControlBlock = nullptr;
+tcb_t *pointerFirstTaskControlBlock = nullptr;
+tcb_t *pointerLastTaskControlBlock = nullptr;
 
-tcb_t *pointerCurrentTaskControlBlock;
-
-/// Define stack for each task. Node that the processor expects the stacks
-/// to be ended on word boundaries.
-int32_t TASK_CONTROL_BLOCK_STACK[NUM_OF_THREADS][STACKSIZE];
-
-void OsInitThreadStack(volatile void (*func0)(), volatile void (*func1)())
+void CreateTask(volatile void (*task)(), uint32_t stackSize)
 {
+    // 1. Calculate the base address for the stack
+    volatile int32_t stackBase = CURRENT_HEAP_END + stackSize;
+
+    // 2. Update the current SRAM end address
+    CURRENT_HEAP_END = stackBase;
+
+    // 3. Create a TCB for the task
+    tcb_t tcb;
+    tcb.stackPointer = (int32_t *)(stackBase - 16); // 16 registers to be saved on stack
+
+    // 4. Set the 'T' bit in stacked xPSR to '1' to notify processor
+    // on exception return about the thumb state. V6-m and V7-m cores
+    // can only support thumb state hence this should be always set
+    // to '1'.
+
+    volatile int32_t *stackPointerxPSR = (int32_t *)stackBase - 1;
+    *stackPointerxPSR = 0x01000000;
+
+    volatile int32_t *stackPointerTask = (int32_t *)stackBase - 2;
+    *stackPointerTask = (int32_t)task;
+
+    // tcb->stackPointer[stackSize - 1] = 0x01000000;
+
+    // // 5. Set the stacked PC to point to the task
+    // tcb->stackPointer[stackSize - 2] = task;
+
+    // 6. Set the stacked LR to point to the launch scheduler routine (round robin)
+
+    if (pointerFirstTaskControlBlock == nullptr) // first task created
+    {
+        pointerLastTaskControlBlock = &tcb;
+        pointerFirstTaskControlBlock = &tcb;
+        pointerFirstTaskControlBlock->nextStackPointer = &tcb;
+    }
+    else // not the first task created
+    {
+        pointerLastTaskControlBlock->nextStackPointer = &tcb;
+        tcb.nextStackPointer = pointerFirstTaskControlBlock;
+        pointerLastTaskControlBlock = &tcb;
+    }
+}
+
+void OsInitThreadStack()
+{
+    pointerCurrentTaskControlBlock = pointerFirstTaskControlBlock;
+
     hw_set_bits(&timer_hw->inte, 1u << TIMER_IRQ_0);
 
     irq_set_exclusive_handler(TIMER_IRQ_0, SysTick_Handler);
@@ -29,47 +77,6 @@ void OsInitThreadStack(volatile void (*func0)(), volatile void (*func1)())
     timer_hw->alarm[TIMER_IRQ_0] = (uint32_t)target;
 
     __asm("CPSID   I"); // disable interrupts
-
-    /// Make the TCB linked list circular
-    taskControlBlocks[0].nextStackPointer = &taskControlBlocks[1];
-    taskControlBlocks[1].nextStackPointer = &taskControlBlocks[0];
-
-    /// Setup stack for task0
-
-    /// Setup the stack such that it is holding one task context.
-    /// Remember it is a descending stack and a context consists of 16 registers.
-
-    taskControlBlocks[0].stackPointer = &TASK_CONTROL_BLOCK_STACK[0][STACKSIZE - 16];
-
-    /// Set the 'T' bit in stacked xPSR to '1' to notify processor
-    /// on exception return about the thumb state. V6-m and V7-m cores
-    /// can only support thumb state hence this should be always set
-    /// to '1'.
-    TASK_CONTROL_BLOCK_STACK[0][STACKSIZE - 1] = 0x01000000;
-
-    /// Set the stacked PC to point to the task
-    TASK_CONTROL_BLOCK_STACK[0][STACKSIZE - 2] = (int32_t)func0;
-
-    /// Setup stack for task1
-
-    /// Setup the stack such that it is holding one task context.
-    /// Remember it is a descending stack and a context consists of 16 registers.
-    taskControlBlocks[1].stackPointer = &TASK_CONTROL_BLOCK_STACK[1][STACKSIZE - 16];
-
-    /// Set the 'T' bit in stacked xPSR to '1' to notify processor
-    /// on exception return about the thumb state. V6-m and V7-m cores
-    /// can only support thumb state hence this should be always set
-    /// to '1'.
-    TASK_CONTROL_BLOCK_STACK[1][STACKSIZE - 1] = 0x01000000;
-
-    /// Set the stacked PC to point to the task
-    TASK_CONTROL_BLOCK_STACK[1][STACKSIZE - 2] = (int32_t)func1;
-
-    /// Make current tcb pointer point to task0
-    pointerCurrentTaskControlBlock = &taskControlBlocks[0];
-
-    /// Enable interrupts
-    __asm("CPSIE   I ");
 }
 
 __attribute__((naked)) void SysTick_Handler(void)
