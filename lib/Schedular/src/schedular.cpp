@@ -96,7 +96,7 @@ __attribute__((naked)) void SysTick_Handler(void)
     __asm("PUSH    {R4-R7}");
 
     /// Load R0 with the address of pCurntTcb
-    __asm("LDR     R0, =pCurntTcb");
+    __asm("LDR     R0, =pointerCurrentTaskControlBlock");
 
     /// Load R1 with the content of pCurntTcb(i.e post this, R1 will contain the address of current TCB).
     __asm("LDR     R1, [R0]");
@@ -137,7 +137,7 @@ __attribute__((naked)) void SysTick_Handler(void)
 __attribute__((naked)) void LaunchScheduler(void)
 {
     /// R0 contains the address of currentPt
-    __asm("LDR     R0, =pCurntTcb");
+    __asm("LDR     R0, =pointerCurrentTaskControlBlock");
 
     /// R2 contains the address in currentPt(value of currentPt)
     __asm("LDR     R2, [R0]");
