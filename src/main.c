@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <Schedular.h>
+#include <task.h>
 
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
@@ -105,12 +105,11 @@ int main()
 {
   enable_uart();
 
-  CreateTask(Task0, STACKSIZE);
-  CreateTask(Task1, STACKSIZE);
-  CreateTask(Task2, STACKSIZE);
+  xTaskCreate(Task0, "Task 0", 200, PRORITY_LOW);
+  xTaskCreate(Task1, "Task 1", 200, PRORITY_MEDIUM);
+  xTaskCreate(Task2, "Task 2", 200, PRORITY_HIGH);
 
-  OsInitThreadStack();
-  LaunchScheduler();
+  xStartSchedular();
 
   while (1)
     ;
