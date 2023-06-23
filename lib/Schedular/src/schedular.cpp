@@ -1,5 +1,8 @@
 #include "schedular.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #define HEAP_SIZE 1024
 
 struct taskControlBlock
@@ -21,28 +24,25 @@ void CreateTask(volatile void (*task)(), uint32_t stackSize)
 {
     HEAP_INDEX += stackSize;
 
-    tcb_t tcb;
-    tcb.stackPointer = &RTOS_HEAP[HEAP_INDEX - 16];
+    tcb_t *tcb = (tcb_t *)malloc(sizeof(tcb_t));
+    tcb->stackPointer = &RTOS_HEAP[HEAP_INDEX - 16];
 
     RTOS_HEAP[HEAP_INDEX - 1] = 0x01000000;
     RTOS_HEAP[HEAP_INDEX - 2] = (int32_t)task;
 
-    pointerFirstTaskControlBlock = &tcb;
-    pointerFirstTaskControlBlock->nextStackPointer = &tcb;
-
-    // // 6. Set the stacked LR to point to the launch scheduler routine (round robin)
-    // if (pointerFirstTaskControlBlock == nullptr) // first task created
-    // {
-    //     pointerLastTaskControlBlock = &tcb;
-    //     pointerFirstTaskControlBlock = &tcb;
-    //     pointerFirstTaskControlBlock->nextStackPointer = &tcb;
-    // }
-    // else // not the first task created
-    // {
-    //     pointerLastTaskControlBlock->nextStackPointer = &tcb;
-    //     tcb.nextStackPointer = pointerFirstTaskControlBlock;
-    //     pointerLastTaskControlBlock = &tcb;
-    // }
+    // 6. Set the stacked LR to point to the launch scheduler routine (round robin)
+    if (pointerFirstTaskControlBlock == nullptr) // first task created
+    {
+        pointerLastTaskControlBlock = tcb;
+        pointerFirstTaskControlBlock = tcb;
+        pointerFirstTaskControlBlock->nextStackPointer = tcb;
+    }
+    else // not the first task created
+    {
+        pointerLastTaskControlBlock->nextStackPointer = tcb;
+        tcb->nextStackPointer = pointerFirstTaskControlBlock;
+        pointerLastTaskControlBlock = tcb;
+    }
 }
 
 void OsInitThreadStack()

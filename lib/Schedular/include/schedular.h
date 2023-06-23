@@ -6,7 +6,7 @@
 
 #define NUM_OF_THREADS 2
 
-#define STACKSIZE 500
+#define STACKSIZE 250
 
 __attribute__((naked)) void LaunchScheduler();
 __attribute__((naked)) void SysTick_Handler(void);
