@@ -15,9 +15,6 @@
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
-#define SYST_CRS 0xe010
-#define SYST_RVR 0xe014
-
 void portable_delay_s(unsigned long n)
 {
   int delay = (SYS_SECOND * n) / 2;
@@ -105,9 +102,13 @@ int main()
 {
   enable_uart();
 
-  xTaskCreate(Task0, "Task 0", 200, PRORITY_LOW);
-  xTaskCreate(Task1, "Task 1", 200, PRORITY_MEDIUM);
-  xTaskCreate(Task2, "Task 2", 200, PRORITY_HIGH);
+  xTaskHandle_t taskHandle0 = NULL;
+  xTaskHandle_t taskHandle1 = NULL;
+  xTaskHandle_t taskHandle2 = NULL;
+
+  xTaskCreate(Task0, "Task 0", 200, PRORITY_LOW, &taskHandle0);
+  xTaskCreate(Task1, "Task 1", 200, PRORITY_MEDIUM, &taskHandle1);
+  xTaskCreate(Task2, "Task 2", 800, PRORITY_HIGH, &taskHandle2);
 
   xStartSchedular();
 

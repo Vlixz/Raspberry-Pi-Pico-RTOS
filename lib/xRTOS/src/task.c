@@ -1,28 +1,42 @@
 #include "task.h"
+#include "memory.h"
 #include "common.h"
 
+#include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "../lib/m0plus/scb.h"
 #include "../lib/m0plus/systick.h"
 
-int32_t RTOS_HEAP[HEAP_SIZE];
-int32_t HEAP_INDEX = 0;
-
 xTaskControlBlock_t *currentTaskControlBlock = NULL;
 xTaskControlBlock_t *firstTaskControlBlock = NULL;
 xTaskControlBlock_t *lastTaskControlBlock = NULL;
 
-void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priority)
+void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priority, xTaskHandle_t *handle)
 {
-    HEAP_INDEX += stackSize;
+    uint32_t *start_of_stack_address;
 
-    xTaskControlBlock_t *tcb = (xTaskControlBlock_t *)malloc(sizeof(xTaskControlBlock_t));
-    tcb->stackPointer = &RTOS_HEAP[HEAP_INDEX - 16];
+    if (!get_task_memory(stackSize, &start_of_stack_address))
+    {
+        return; // not enough memory
+    }
 
-    RTOS_HEAP[HEAP_INDEX - 1] = 0x01000000;
-    RTOS_HEAP[HEAP_INDEX - 2] = (int32_t)task;
+    xTaskControlBlock_t *tcb = (xTaskControlBlock_t *)*handle;
+
+    tcb = (xTaskControlBlock_t *)malloc(sizeof(xTaskControlBlock_t));
+
+    tcb->stackPointer = &start_of_stack_address[stackSize - 16];
+
+    tcb->name = malloc(sizeof(char) * strlen(name));
+    strcpy(tcb->name, name);
+
+    tcb->priority = priority;
+
+    // Thumb bit must be set for the stacked PC
+    start_of_stack_address[stackSize - 1] = 0x01000000;
+    start_of_stack_address[stackSize - 2] = (int32_t)task;
 
     // Set the stacked LR to point to the launch scheduler routine (round robin)
     if (firstTaskControlBlock == NULL) // first task created
