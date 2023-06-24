@@ -4,10 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "hardware/irq.h"
-#include "hardware/exception.h"
-#include "hardware/structs/scb.h"
-#include "hardware/structs/systick.h"
+#include "../lib/m0plus/scb.h"
+#include "../lib/m0plus/systick.h"
 
 int32_t RTOS_HEAP[HEAP_SIZE];
 int32_t HEAP_INDEX = 0;
@@ -90,13 +88,13 @@ __attribute__((naked)) void SysTick_Handler(void)
 void xStartSchedular()
 {
     // ENABLE SYSTICK ISR   (1ms context switching)
-    systick_hw->csr = 0;          // Disable systick
-    systick_hw->rvr = 999ul;      // Set reload value
-    systick_hw->cvr = 0;          // Clear current value
-    systick_hw->csr = 0x00000007; // Enable systick, enable interrupts, use processor clock
+    m0plus_systick_hw->csr = 0;          // Disable systick
+    m0plus_systick_hw->rvr = 999ul;      // Set reload value
+    m0plus_systick_hw->cvr = 0;          // Clear current value
+    m0plus_systick_hw->csr = 0x00000007; // Enable systick, enable interrupts, use processor clock
 
     // Set systick interrupt handler
-    ((exception_handler_t *)scb_hw->vtor)[15] = SysTick_Handler;
+    ((volatile uint32_t *)m0plus_scb_hw->vtor)[15] = (uint32_t)SysTick_Handler;
 
     // SET UP THE FIRST TASK
     currentTaskControlBlock = firstTaskControlBlock;
