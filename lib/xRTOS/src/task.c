@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "pico/stdlib.h"
+#include "../lib/m0plus/scb.h"
+#include "../lib/m0plus/systick.h"
 
 int32_t RTOS_HEAP[HEAP_SIZE];
 int32_t HEAP_INDEX = 0;
@@ -38,6 +39,12 @@ void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priori
     }
 }
 
+__attribute__((naked)) void SysTick_Handler(void)
+{
+    SAVE_CONTEXT();
+    LOAD_CONTEXT();
+}
+
 void xStartSchedular()
 {
     // ENABLE SYSTICK ISR   (1ms context switching)
@@ -51,16 +58,6 @@ void xStartSchedular()
 
     // Setup the first task to be ran
     currentTaskControlBlock = firstTaskControlBlock;
-
-    hw_set_bits(&timer_hw->inte, 1u << TIMER_IRQ_0);
-
-    irq_set_exclusive_handler(TIMER_IRQ_0, SysTick_Handler);
-
-    irq_set_enabled(TIMER_IRQ_0, true);
-
-    uint64_t target = timer_hw->timerawl + 1000; // Every 1ms
-
-    timer_hw->alarm[TIMER_IRQ_0] = (uint32_t)target;
 
     __asm("CPSID   I"); // disable interrupts
 
