@@ -15,23 +15,14 @@
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
-void portable_delay_s(unsigned long n)
-{
-  int delay = (SYS_SECOND * n) / 2;
-
-  while (delay--)
-  {
-    asm volatile("");
-  }
-}
-
 volatile void Task0()
 {
   int count = 0;
 
   while (1)
   {
-    portable_delay_s(1);
+    xTaskDelay(4000);
+
     count++;
 
     char str[10];
@@ -47,7 +38,7 @@ volatile void Task1()
 
   while (1)
   {
-    portable_delay_s(2);
+    xTaskDelay(2000);
 
     count++;
 
@@ -64,12 +55,12 @@ volatile void Task2()
 
   while (1)
   {
-    portable_delay_s(3);
+    xTaskDelay(1000);
 
     count++;
 
     char str[10];
-    sprintf(str, "Task 2: %d\n", count);
+    sprintf(str, "Task 2: %d\n\n\n", count);
 
     uart_puts(UART_ID, str);
   }
@@ -98,6 +89,11 @@ void enable_uart()
   uart_puts(UART_ID, " Hello, UART!\n");
 }
 
+volatile void TestTask()
+{
+  uart_puts(UART_ID, "Hello, World!\n");
+}
+
 int main()
 {
   enable_uart();
@@ -106,9 +102,9 @@ int main()
   xTaskHandle_t taskHandle1 = NULL;
   xTaskHandle_t taskHandle2 = NULL;
 
-  xTaskCreate(Task0, "Task 0", 200, PRORITY_LOW, &taskHandle0);
-  xTaskCreate(Task1, "Task 1", 200, PRORITY_MEDIUM, &taskHandle1);
-  xTaskCreate(Task2, "Task 2", 800, PRORITY_HIGH, &taskHandle2);
+  xTaskCreate(Task0, "Task 0", 400, PRORITY_LOW, &taskHandle0);
+  xTaskCreate(Task1, "Task 1", 400, PRORITY_LOW, &taskHandle1);
+  xTaskCreate(Task2, "Task 2", 200, PRORITY_LOW, &taskHandle2);
 
   xStartSchedular();
 
