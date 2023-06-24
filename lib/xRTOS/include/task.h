@@ -8,12 +8,20 @@
 
 #include <stdint.h>
 
+typedef enum taskState
+{
+    TASK_STATE_RUNNING,
+    TASK_STATE_BLOCKED,
+    TASK_STATE_DELAYED
+} xTaskState_t;
+
 typedef struct xTaskControlBlock
 {
     int32_t *stackPointer;
-    struct xTaskControlBlock *nextStackPointer;
+    struct xTaskControlBlock *next;
     uint32_t priority;
-    uint32_t state;
+    xTaskState_t state;
+    uint32_t delayTicks;
     char *name;
 } xTaskControlBlock_t;
 
@@ -23,6 +31,7 @@ void xStartSchedular();
 
 void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priority, xTaskHandle_t *handle);
 void xTaskDelete();
+void xTaskDelay(uint32_t ticks);
 void xTaskSetPriority();
 
 #endif // TASK_H
