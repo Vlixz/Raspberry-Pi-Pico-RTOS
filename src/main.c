@@ -34,7 +34,7 @@ volatile void Task0()
 
   while (1)
   {
-    sleep_ms(1000);
+    portable_delay_s(1);
     count++;
 
     char str[10];
@@ -50,7 +50,7 @@ volatile void Task1()
 
   while (1)
   {
-    sleep_ms(2000);
+    portable_delay_s(2);
 
     count++;
 
@@ -67,7 +67,7 @@ volatile void Task2()
 
   while (1)
   {
-    sleep_ms(4000);
+    portable_delay_s(3);
 
     count++;
 
