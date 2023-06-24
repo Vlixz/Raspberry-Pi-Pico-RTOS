@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "hardware/irq.h"
+#include "hardware/exception.h"
+#include "hardware/structs/scb.h"
+#include "hardware/structs/systick.h"
+
 int32_t RTOS_HEAP[HEAP_SIZE];
 int32_t HEAP_INDEX = 0;
 
@@ -78,26 +83,23 @@ __attribute__((naked)) void LaunchScheduler(void)
 
 __attribute__((naked)) void SysTick_Handler(void)
 {
-    // hw_clear_bits(&timer_hw->intr, 1u << TIMER_IRQ_0);
-    // timer_hw->alarm[TIMER_IRQ_0] = (uint32_t)timer_hw->timerawl + 10000;
-
     SAVE_CONTEXT();
     LOAD_CONTEXT();
 }
 
 void xStartSchedular()
 {
+    // ENABLE SYSTICK ISR   (1ms context switching)
+    systick_hw->csr = 0;          // Disable systick
+    systick_hw->rvr = 999ul;      // Set reload value
+    systick_hw->cvr = 0;          // Clear current value
+    systick_hw->csr = 0x00000007; // Enable systick, enable interrupts, use processor clock
+
+    // Set systick interrupt handler
+    ((exception_handler_t *)scb_hw->vtor)[15] = SysTick_Handler;
+
+    // SET UP THE FIRST TASK
     currentTaskControlBlock = firstTaskControlBlock;
-
-    // hw_set_bits(&timer_hw->inte, 1u << TIMER_IRQ_0);
-
-    // irq_set_exclusive_handler(TIMER_IRQ_0, SysTick_Handler);
-
-    // irq_set_enabled(TIMER_IRQ_0, true);
-
-    // uint64_t target = timer_hw->timerawl + 1000; // Every 1ms
-
-    // timer_hw->alarm[TIMER_IRQ_0] = (uint32_t)target;
 
     __asm("CPSID   I"); // disable interrupts
 

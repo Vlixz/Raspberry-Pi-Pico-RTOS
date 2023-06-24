@@ -5,11 +5,7 @@
 #include <task.h>
 
 #include "pico/stdlib.h"
-#include "hardware/irq.h"
 #include "hardware/uart.h"
-#include "hardware/exception.h"
-#include "hardware/structs/scb.h"
-#include "hardware/structs/systick.h"
 
 #define SYS_SECOND 48000000
 
@@ -38,7 +34,7 @@ volatile void Task0()
 
   while (1)
   {
-    sleep_ms(1000);
+    portable_delay_s(1);
     count++;
 
     char str[10];
@@ -54,7 +50,7 @@ volatile void Task1()
 
   while (1)
   {
-    sleep_ms(2000);
+    portable_delay_s(2);
 
     count++;
 
@@ -71,7 +67,7 @@ volatile void Task2()
 
   while (1)
   {
-    sleep_ms(4000);
+    portable_delay_s(3);
 
     count++;
 
@@ -105,44 +101,15 @@ void enable_uart()
   uart_puts(UART_ID, " Hello, UART!\n");
 }
 
-volatile int count = 0;
-void SysTick_Handler()
-{
-  count++;
-}
-
-#define CORTEX_M0PLUS_REG_BASE 0xe0000000
-#define SYSTICK_CSR_OFFSET 0xe010
-#define SYSTICK_RVR_OFFSET 0xe014
-#define SYSTICK_CVR_OFFSET 0xe018
-#define SYSTICK_CALIB_OFFSET 0xe01c
-#define SYSTICK_IRQ_NUM 15
-
-#define VTOR_OFFSET 0xed08
-#define NVIC_ISER 0xE000E100
-
-void EnableSystick()
-{
-  systick_hw->csr = 0;          // Disable systick
-  systick_hw->rvr = 999ul;      // Set reload value
-  systick_hw->cvr = 0;          // Clear current value
-  systick_hw->csr = 0x00000007; // Enable systick, enable interrupts, use processor clock
-
-  // Set systick interrupt handler
-  ((exception_handler_t *)scb_hw->vtor)[SYSTICK_IRQ_NUM] = SysTick_Handler;
-}
-
 int main()
 {
-  // enable_uart();
+  enable_uart();
 
-  // xTaskCreate(Task0, "Task 0", 200, PRORITY_LOW);
-  // xTaskCreate(Task1, "Task 1", 200, PRORITY_MEDIUM);
-  // xTaskCreate(Task2, "Task 2", 200, PRORITY_HIGH);
+  xTaskCreate(Task0, "Task 0", 200, PRORITY_LOW);
+  xTaskCreate(Task1, "Task 1", 200, PRORITY_MEDIUM);
+  xTaskCreate(Task2, "Task 2", 200, PRORITY_HIGH);
 
-  // xStartSchedular();
-
-  EnableSystick();
+  xStartSchedular();
 
   while (1)
     ;
