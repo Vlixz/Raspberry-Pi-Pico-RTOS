@@ -55,12 +55,12 @@ void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priori
 
 void xTaskDelay(uint32_t ticks)
 {
-    __asm("CPSID   I"); // disable interrupts
+    DISABLE_INTERRUPTS();
 
     tcb_current->delayTicks = ticks;
     tcb_current->state = TASK_STATE_DELAYED;
 
-    __asm("CPSIE   I"); // enable interrupts
+    ENABLE_INTERRUPTS();
 
     while (tcb_current->state == TASK_STATE_DELAYED)
         asm volatile(""); // wait for the schedular to be called
