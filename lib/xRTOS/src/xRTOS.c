@@ -31,7 +31,7 @@ __attribute__((naked)) void SysTick_Handler(void)
 
             break;
 
-        case TASK_STATE_BLOCKED:
+        case TASK_STATE_WAITING_FOR_SEMAPHORE:
 
             if (tcb_pivot->semaphore->state == SEMAPHORE_FREE)
                 tcb_pivot->state = TASK_STATE_RUNNING; // if the semaphore is free, set the task to running

@@ -9,10 +9,13 @@
 #include <stdint.h>
 #include "semaphore.h"
 
+/**
+ * Different states a task can be in.
+ */
 typedef enum taskState
 {
     TASK_STATE_RUNNING,
-    TASK_STATE_BLOCKED,
+    TASK_STATE_WAITING_FOR_SEMAPHORE,
     TASK_STATE_DELAYED
 } xTaskState_t;
 
@@ -78,9 +81,22 @@ extern volatile xTaskControlBlock_t *tcb_current; // Current task running
 extern volatile xTaskControlBlock_t *tcb_tail;    // First task in the list
 extern volatile xTaskControlBlock_t *tcb_head;    // Last task in the list
 
+/**
+ * Creating a new task.
+ *
+ * @param task The function to run in the task.
+ * @param name The name of the task.
+ * @param stackSize The size of the stack in words.
+ * @param priority The priority of the task.
+ * @param handle The handle of the task.
+ */
 void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priority, xTaskHandle_t *handle);
-void xTaskDelete();
+
+/**
+ * Delay the task for a certain amount of ticks.
+ *
+ * @param ticks The amount of ticks to delay the task for.
+ */
 void xTaskDelay(uint32_t ticks);
-void xTaskSetPriority();
 
 #endif // TASK_H
