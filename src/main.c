@@ -4,6 +4,7 @@
 
 #include <xRTOS.h>
 #include <task.h>
+#include <semaphore.h>
 
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
@@ -16,13 +17,17 @@
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
+xSemaphore_t semaphore0;
+
 volatile void Task0()
 {
   int count = 0;
 
+  xSemaphoreTake(&semaphore0, 10000);
+
   while (1)
   {
-    xTaskDelay(4000);
+    xTaskDelay(1000);
 
     count++;
 
@@ -39,29 +44,28 @@ volatile void Task1()
 
   while (1)
   {
-    xTaskDelay(2000);
 
-    count++;
+    uart_puts(UART_ID, "Task 1: Waiting for semaphore...\n");
+    uint32_t r = xSemaphoreTake(&semaphore0, 5000);
 
-    char str[10];
-    sprintf(str, "Task 1: %d\n", count);
+    if (r == 0)
+    {
+      uart_puts(UART_ID, "Task 1: Timed out...\n");
+      continue;
+    }
+    else
+    {
+      uart_puts(UART_ID, "Task 1: Taken semaphore...\n");
+    }
 
-    uart_puts(UART_ID, str);
-  }
-}
+    xSemaphoreGive(&semaphore0);
 
-volatile void Task2()
-{
-  int count = 0;
-
-  while (1)
-  {
     xTaskDelay(1000);
 
     count++;
 
     char str[10];
-    sprintf(str, "Task 2: %d\n\n\n", count);
+    sprintf(str, "Task 1: %d\n", count);
 
     uart_puts(UART_ID, str);
   }
@@ -90,11 +94,6 @@ void enable_uart()
   uart_puts(UART_ID, " Hello, UART!\n");
 }
 
-volatile void TestTask()
-{
-  uart_puts(UART_ID, "Hello, World!\n");
-}
-
 int main()
 {
   enable_uart();
@@ -103,9 +102,10 @@ int main()
   xTaskHandle_t taskHandle1 = NULL;
   xTaskHandle_t taskHandle2 = NULL;
 
+  semaphore0 = xSemaphoreCreate();
+
   xTaskCreate(Task0, "Task 0", 400, PRORITY_LOW, &taskHandle0);
-  xTaskCreate(Task1, "Task 1", 400, PRORITY_HIGH, &taskHandle1);
-  xTaskCreate(Task2, "Task 2", 200, PRORITY_LOW, &taskHandle2);
+  xTaskCreate(Task1, "Task 1", 400, PRORITY_LOW, &taskHandle1);
 
   xStartSchedular();
 
