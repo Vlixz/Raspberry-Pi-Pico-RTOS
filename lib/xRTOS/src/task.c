@@ -1,3 +1,5 @@
+#include "xRTOS.h"
+
 #include "task.h"
 #include "memory.h"
 #include "common.h"
@@ -7,12 +9,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../lib/m0plus/scb.h"
-#include "../lib/m0plus/systick.h"
-
-volatile xTaskControlBlock_t *tcb_current = NULL;
-volatile xTaskControlBlock_t *tcb_tail = NULL;
-volatile xTaskControlBlock_t *tcb_head = NULL;
+volatile xTaskControlBlock_t *tcb_current = NULL; // Current task running
+volatile xTaskControlBlock_t *tcb_tail = NULL;    // First task in the list
+volatile xTaskControlBlock_t *tcb_head = NULL;    // Last task in the list
 
 void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priority, xTaskHandle_t *handle)
 {
@@ -54,50 +53,6 @@ void xTaskCreate(void (*task)(), char *name, uint32_t stackSize, uint32_t priori
     }
 }
 
-__attribute__((naked)) void SysTick_Handler(void)
-{
-    SAVE_CONTEXT();
-
-    // TODO: Implement round robin scheduling
-    // TODO: Implement task delay
-
-    volatile xTaskControlBlock_t *tcb_pivot = tcb_current;
-    volatile xTaskControlBlock_t *tcb_next = tcb_current->next;
-
-    do
-    {
-        switch (tcb_pivot->state)
-        {
-        case TASK_STATE_DELAYED:
-            if (tcb_pivot->delayTicks > 0)
-                tcb_pivot->delayTicks--;
-            else
-                tcb_pivot->state = TASK_STATE_RUNNING;
-            break;
-
-        case TASK_STATE_BLOCKED:
-            break;
-        case TASK_STATE_RUNNING:
-
-            if (tcb_next->state != TASK_STATE_RUNNING)
-                tcb_next = tcb_pivot; // if the next task is not running, switch to this task
-
-            if (tcb_pivot->priority >= tcb_next->priority)
-                tcb_next = tcb_pivot; // if the priority is higher than the current task, switch to this task
-
-            break;
-        default:
-            break;
-        }
-
-        tcb_pivot = tcb_pivot->next;
-    } while (tcb_pivot != tcb_current);
-
-    tcb_current = tcb_next;
-
-    LOAD_CONTEXT();
-}
-
 void xTaskDelay(uint32_t ticks)
 {
     __asm("CPSID   I"); // disable interrupts
@@ -108,24 +63,5 @@ void xTaskDelay(uint32_t ticks)
     __asm("CPSIE   I"); // enable interrupts
 
     while (tcb_current->state == TASK_STATE_DELAYED)
-        asm volatile("");
-}
-
-void xStartSchedular()
-{
-    // ENABLE SYSTICK ISR   (1ms context switching)
-    m0plus_systick_hw->csr = 0;          // Disable systick
-    m0plus_systick_hw->rvr = 125000u;    // Set reload value to 1ms
-    m0plus_systick_hw->cvr = 0;          // Clear current value
-    m0plus_systick_hw->csr = 0x00000007; // Enable systick, enable interrupts, use processor clock
-
-    // Set systick interrupt handler
-    ((volatile uint32_t *)m0plus_scb_hw->vtor)[15] = (uint32_t)SysTick_Handler;
-
-    // Setup the first task to be ran
-    tcb_current = tcb_tail;
-
-    __asm("CPSID   I"); // disable interrupts
-
-    LAUNCH_SCHEDULAR();
+        asm volatile(""); // wait for the schedular to be called
 }

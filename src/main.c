@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include <xRTOS.h>
 #include <task.h>
 
 #include "pico/stdlib.h"
@@ -103,7 +104,7 @@ int main()
   xTaskHandle_t taskHandle2 = NULL;
 
   xTaskCreate(Task0, "Task 0", 400, PRORITY_LOW, &taskHandle0);
-  xTaskCreate(Task1, "Task 1", 400, PRORITY_LOW, &taskHandle1);
+  xTaskCreate(Task1, "Task 1", 400, PRORITY_HIGH, &taskHandle1);
   xTaskCreate(Task2, "Task 2", 200, PRORITY_LOW, &taskHandle2);
 
   xStartSchedular();
