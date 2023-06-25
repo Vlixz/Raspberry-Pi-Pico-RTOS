@@ -31,9 +31,16 @@ __attribute__((naked)) void SysTick_Handler(void)
 
             break;
 
-        case TASK_STATE_BLOCKED:
+        case TASK_STATE_WAITING_FOR_SEMAPHORE:
 
-            // TODO: Implement blocking (semaphores, mutexes, etc.)
+            if (tcb_pivot->semaphore->state == SEMAPHORE_FREE)
+                tcb_pivot->state = TASK_STATE_RUNNING; // if the semaphore is free, set the task to running
+
+            if (tcb_pivot->delayTicks > 0)
+                tcb_pivot->delayTicks--; // decrement the delay ticks
+
+            if (tcb_pivot->delayTicks == 0)
+                tcb_pivot->state = TASK_STATE_RUNNING; // if the delay is over, set the task to running
 
             break;
         case TASK_STATE_RUNNING:
@@ -71,7 +78,9 @@ void xStartSchedular(void)
     // Setup the first task to be ran
     tcb_current = tcb_tail;
 
-    __asm("CPSID   I"); // disable interrupts
+    DISABLE_INTERRUPTS();
 
     LAUNCH_SCHEDULAR();
+
+    // Everything below this line will not be executed
 }

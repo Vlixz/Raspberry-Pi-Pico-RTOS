@@ -1,9 +1,12 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef INC_COMMON_H
+#define INC_COMMON_H
 
 #include <stdint.h>
 
 #define HEAP_SIZE 1024
+
+#define DISABLE_INTERRUPTS() __asm__ volatile("CPSID I");
+#define ENABLE_INTERRUPTS() __asm__ volatile("CPSIE I");
 
 #define LAUNCH_SCHEDULAR()                                                 \
     __asm__ volatile("LDR       R0,         =tcb_current                ;" \
@@ -57,4 +60,4 @@
                      "CPSIE     I                       ;" \
                      "BX        LR                      ;");
 
-#endif // COMMON_H
+#endif // INC_COMMON_H
