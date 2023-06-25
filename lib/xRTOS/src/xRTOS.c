@@ -78,7 +78,9 @@ void xStartSchedular(void)
     // Setup the first task to be ran
     tcb_current = tcb_tail;
 
-    __asm("CPSID   I"); // disable interrupts
+    DISABLE_INTERRUPTS();
 
     LAUNCH_SCHEDULAR();
+
+    // Everything below this line will not be executed
 }
