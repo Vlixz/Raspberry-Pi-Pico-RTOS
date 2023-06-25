@@ -21,12 +21,12 @@ uint32_t xSemaphoreTake(xSemaphore_t *semaphore, uint32_t delayTicks)
 
     // Add current task to semaphore's waiting list
     tcb_current->semaphore = semaphore;
-    tcb_current->state = TASK_STATE_BLOCKED;
+    tcb_current->state = TASK_STATE_WAITING_FOR_SEMAPHORE;
     tcb_current->delayTicks = delayTicks;
 
     __asm("CPSIE   I"); // Enable interrupts
 
-    while (tcb_current->state == TASK_STATE_BLOCKED)
+    while (tcb_current->state == TASK_STATE_WAITING_FOR_SEMAPHORE)
         __asm("WFI"); // Wait for interrupt
 
     if (tcb_current->semaphore->state == SEMAPHORE_FREE)
