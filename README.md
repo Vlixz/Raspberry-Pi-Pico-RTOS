@@ -1,6 +1,6 @@
 # Raspberry Pi Pico RTOS
 
-I made a simple operating system called RTOS to learn how real-time systems work.
+I made a simple RTOS to learn how real-time systems work.
 
 ## Features
 
