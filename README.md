@@ -14,11 +14,11 @@ This project can be built using PlatformIO.
 
 ### Prerequisites
 
-- Install [PlatformIO](https://platformio.org/installation)
+- Install [PlatformIO]((https://platformio.org/)
 - A second Raspberry Pi Pico as a [picoprobe](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf#picoprobe_section) to upload and debug the project
 
 ### Building
 
-1. Clone the repository: `git clone https://github.com/your-username/your-repo.git`
+1. Clone the repository: `https://github.com/Vlixz/Raspberry-Pi-Pico-RTOS.git`
 2. Open the project in PlatformIO.
 3. Build/Upload the project.
