@@ -14,7 +14,7 @@ This project can be built using PlatformIO.
 
 ### Prerequisites
 
-- Install [PlatformIO]((https://platformio.org/)
+- Install [PlatformIO](https://platformio.org/)
 - A second Raspberry Pi Pico as a [picoprobe](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf#picoprobe_section) to upload and debug the project
 
 ### Building
